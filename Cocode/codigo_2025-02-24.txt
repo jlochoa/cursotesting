@@ -1,0 +1,290 @@
+// PROFE - Cliente.cs - 15:48
+ public class Cliente
+ {
+     public string NombreCliente { get; set; }
+     public string NombreYApellidos(string nombre, string apellido)
+     {
+         NombreCliente= $"{nombre} {apellido}";
+         return NombreCliente;
+     }
+ }
+
+
+****************************************
+
+// PROFE - ClienteTest - 15:50
+  [TestFixture]
+   public class ClienteTests
+   {
+       private Cliente cliente;
+
+       [SetUp]
+       public void Setup()
+       {
+           cliente = new Cliente();
+       }
+
+       [Test]
+        public void NombreYApellidosDevuelveBien()
+        {
+            cliente.NombreYApellidos("Juan Luis", "Ochoa");
+            Assert.That(cliente.NombreCliente, Is.EqualTo("Juan Luis Ochoa"));
+            Assert.That(cliente.NombreCliente, Does.Contain("Ochoa"));
+            Assert.That(cliente.NombreCliente, Does.Contain("ochoa").IgnoreCase);
+            Assert.That(cliente.NombreCliente, Does.StartWith("j").IgnoreCase);
+            Assert.That(cliente.NombreCliente, Does.EndWith("a"));
+            // Si alguno de los tests da error, se detiene ahí. Para que haga una recopilación de errores, podemos hacer esto:
+            //Assert.Multiple(() =>
+            //{
+            //    Assert.That(cliente.NombreCliente, Is.EqualTo("Juan"));
+            //    Assert.That(cliente.NombreCliente, Does.StartWith("a"));
+            //    Assert.That(cliente.NombreCliente, Does.EndWith("a"));
+            //});
+        }
+
+       [Test]
+       public void NombreClienteReturnNull()
+       {
+           Assert.That(cliente.NombreCliente, Is.Null);
+       }
+
+       [Test]
+       public void NombreClienteReturnNotNull()
+       {
+           cliente.NombreYApellidos("Juan Luis", "Ochoa");
+           Assert.That(cliente.NombreCliente, Is.Not.Null);
+       }
+}
+
+
+****************************************
+
+// PROFE - Operacion.cs - 15:59
+       public List<int> NumerosImpares = new List<int>();
+...
+
+        public List<int> GetListaNumerosImpares(int min, int max)
+        {
+            NumerosImpares.Clear();
+            for (int i = min; i <= max; i++)
+            {
+                if (i % 2 != 0)
+                {
+                    NumerosImpares.Add(i);
+                }
+            }
+
+            return NumerosImpares;
+        }
+
+****************************************
+
+// PROFE - OperacionTest.cs - 16:01
+[Test]
+public void GetListaNumerosImpares_SonImpares()
+{
+    var operacion = new Operacion();
+    List<int> listaEsperada = new List<int>() { 5, 7, 9 };
+    var listaNumeros = operacion.GetListaNumerosImpares(5, 10);
+
+    Assert.That(listaNumeros, Is.EquivalentTo(listaEsperada));
+    Assert.That(listaNumeros, Does.Contain(7));
+    Assert.That(listaNumeros, Has.No.Member(8));
+    Assert.That(listaNumeros, Is.Not.Empty);
+    Assert.That(listaNumeros.Count, Is.EqualTo(3));
+    Assert.That(listaNumeros, Is.Ordered.Ascending); // Por defecto es Ascending, con Is.Ordered sería suficiente
+    Assert.That(listaNumeros, Is.Unique); // No hay duplicados
+}
+
+****************************************
+
+// PROFE - Cliente.cs - 16:05
+    public class Cliente
+    {
+        public string NombreCliente { get; set; }
+        public string NombreYApellidos(string nombre, string apellido)
+        {
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                throw new ArgumentException("El nombre está en blanco");
+            }
+            NombreCliente= $"{nombre} {apellido}";
+            return NombreCliente;
+        }
+    }
+
+****************************************
+
+// PROFE - ClienteTest.cs - 16:06
+ [Test]
+ public void NombreClienteLanzaException()
+ {
+     var excepcion = Assert.Throws<ArgumentException>(() => cliente.NombreYApellidos("", "Ochoa"));
+     Assert.That(excepcion.Message, Is.EqualTo("El nombre está en blanco"));
+     
+     Assert.That(() => cliente.NombreYApellidos("", "Ochoa"), Throws.ArgumentException.With.Message.EqualTo("El nombre está en blanco"));
+
+     Assert.Throws<ArgumentException>(() => cliente.NombreYApellidos("", "Ochoa"));
+
+     Assert.That(() => cliente.NombreYApellidos("", "Ochoa"), Throws.ArgumentException);
+ }
+
+****************************************
+
+// PROFE - CuentaCorriente.cs - 16:11
+  public class CuentaCorriente
+    {
+        public decimal Saldo { get; set; }
+        private readonly LoggerGeneral _loggerGeneral;
+        public CuentaCorriente(LoggerGeneral loggerGeneral)
+        {
+            Saldo = 0;
+            _loggerGeneral = loggerGeneral;
+        }
+
+        public bool Ingreso(decimal importe)
+        {
+            _loggerGeneral.Message("Ingresando " + importe);
+            Saldo += importe;
+            return true;
+        }
+
+        public bool Retiro(decimal importe)
+        {
+            if (importe <= Saldo)
+            {
+                Saldo -= importe;
+                return true;
+            }
+            return false;
+        }
+
+        public decimal GetSaldo()
+        {
+            return Saldo;
+        }
+    }
+
+
+****************************************
+
+// PROFE - LoggerGeneral.cs - 16:12
+ public class LoggerGeneral
+ {
+     public void Message(string message)
+     {
+         Console.WriteLine(message);
+     }
+ }
+
+****************************************
+
+// PROFE - CuentaCorrienteTest.cs - 16:18
+[TestFixture]
+    public class CuentaCorrienteTests
+    {
+        private CuentaCorriente cuentaCorriente;
+
+        [SetUp]
+        public void Setup()
+        {
+            cuentaCorriente = new CuentaCorriente(new LoggerGeneral());
+        }
+
+        [Test]
+        public void IngresoCorrecto()
+        {
+            var resultado = cuentaCorriente.Ingreso(100);
+            Assert.That(resultado, Is.True);
+            Assert.That(cuentaCorriente.GetSaldo(), Is.EqualTo(100));
+        }
+
+        [Test]
+        public void IngresoCorrectoMock()
+        {
+            var mock = new Mock<LoggerGeneral>();
+            cuentaCorriente = new CuentaCorriente(mock.Object); // Pasa un objeto "fake" 
+            var resultado = cuentaCorriente.Ingreso(100); // No aparece el mensaje de log
+            Assert.That(resultado, Is.True);
+            Assert.That(cuentaCorriente.GetSaldo(), Is.EqualTo(100));
+        }
+
+    }
+
+
+
+****************************************
+
+// PROFE - Producto.cs - 16:31
+   public class Producto
+   {
+       public int Id { get; set; }
+       public string Nombre { get; set; }
+       public decimal Precio { get; set; }
+       public decimal GetPrecio(Cliente cliente)
+       {
+           if (cliente.EsVip)
+           {
+               return Precio / 2;
+           }
+           return Precio;
+       }
+   }
+
+****************************************
+
+// ProductoTest.cs - 16:48
+        [Test]
+        public void GetPrecio_ClienteVip()
+        {
+            // Preparación (arrange)
+            var cliente = new Cliente { EsVip = false };
+            var producto = new Producto { Precio = 200 };
+
+            // Ejecución (act)
+            decimal precioFinal = producto.GetPrecio(cliente);
+
+            // Verificación (assert)
+            Assert.That(precioFinal, Is.EqualTo(100));
+        }
+
+****************************************
+
+// ProductoTest.cs - 16:56
+[SetUp]
+public void Setup()
+{
+    cliente = new Cliente();
+    producto = new Producto();
+}
+// Hacer un test de la clase producto
+// comprobar creando una instancia del cliente y pasándoselo al producto
+// el método getprecio devuelve el precio correctamente dependiendo de si es VIP
+
+[Test]
+public void GetPrecioTest()
+{
+    producto.Precio = 100;
+    cliente.EsVip = true;
+    var resultado = producto.GetPrecio(cliente);
+    Assert.That(resultado, Is.EqualTo(50));
+}
+
+****************************************
+
+// ProductoTest.cs (cliente con mock) - 16:58
+  [Test]
+  public void CalculaPrecioBienClienteNoVipMock()
+  {
+      Producto producto = new Producto
+      {
+          Precio = 50
+      };
+      var cliente = new Mock<Cliente>();
+      cliente.Setup(x => x.EsVip).Returns(false);
+      var resultado = producto.GetPrecio(cliente.Object);
+      Assert.That(resultado, Is.EqualTo(50));
+  }
+
+****************************************
+

@@ -1,0 +1,486 @@
+// PROFE - Nuevo proyecto - 16:05
+ng new pruebas
+
+****************************************
+
+// PROFE - Creación de carpetas - 16:11
+Creamos carpeta unitarias. Dentro creamos la carpeta basicas. Dentro de basicas creamos la carpeta strings. Dentro de strings, creamos strings.ts y strings.spec.ts
+
+****************************************
+
+// PROFE - strings.ts - 16:12
+export const mensaje = (nombre: string)=> {
+    return `Saludos ${nombre}`;
+    // return true;
+}
+
+
+****************************************
+
+// PROFE - strings.spec.ts - 16:12
+import { mensaje } from './strings';
+
+// describe agrupa pruebas,
+// El primer argumento es el nombre del grupo y el segundo la función que agrupa las pruebas
+describe('Pruebas de strings', () => {
+  // El primer argumento es el nombre de la prueba y el segundo la función que efectua la prueba
+  it('Debe de retornar un string', () => {
+    // La prueba espera (expect) sea (toBe) un string
+    const resp = mensaje('Juan Luis');
+    expect(typeof resp).toBe('string');
+  });
+
+  it('Debe de retornar un saludo con el nombre enviado', () => {
+    const nombre = 'Juan Luis';
+    const resp = mensaje(nombre);
+
+    expect(resp).toContain(nombre);
+  });
+});
+
+
+****************************************
+
+// PROFE - numeros.ts - 16:25
+export const incrementar=(numero: number)=> {
+    if (numero > 100) {
+      return 100;
+    } else {
+      return numero + 1;
+    }
+}
+
+****************************************
+
+// PROFE - numeros.spec.ts - 16:25
+import { incrementar } from './numeros';
+
+describe('Pruebas de números', () => {
+  it('Debe de retornar 100 si el número ingresado es mayor a 100', () => {
+    const res = incrementar(300);
+    expect(res).toBe(100);
+  });
+
+  it('Debe de retornar el número ingresado + 1 si no es mayor a 100', () => {
+    const res = incrementar(50);
+    expect(res).toBe(51);
+  });
+});
+
+****************************************
+
+// PROFE - jugador.ts - 16:28
+export class Jugador {
+  puntos: number;
+
+  constructor() {
+    this.puntos = 100;
+  }
+
+  restarPuntos(puntos: number) {
+    if (puntos >= this.puntos) {
+      this.puntos = 0;
+    } else {
+      this.puntos = this.puntos - puntos;
+    }
+
+    return this.puntos;
+  }
+}
+
+****************************************
+
+// PROFE - jugador.spec.ts - 16:29
+import { Jugador } from './clases';
+
+describe('Pruebas de clase', () => {
+  let jugador: Jugador;
+
+  // Ciclo de vida de las pruebas
+  // Al iniciar las pruebas
+  beforeAll(() => {
+    console.warn('BeforeAll');
+    // jugador.puntos = 100;
+  });
+
+  // Al principio de cada prueba
+  beforeEach(() => {
+    // console.warn('BeforeEach');
+    // jugador.puntos = 100;
+    jugador = new Jugador();
+  });
+
+  // Después de todas las pruebas
+  afterAll(() => {
+    // console.warn('AfterAll');
+  });
+
+  // Después de cada prueba
+  afterEach(() => {
+    // console.warn('AfterEach');
+    // jugador.puntos = 100;
+  });
+
+  it('Debe de retornar 80 puntos si se restan 20', () => {
+    // const jugador = new Jugador();
+    const resp = jugador.restarPuntos(20);
+
+    expect(resp).toBe(80);
+  });
+
+  it('Debe de retornar 50 puntos si se restan 50', () => {
+    // const jugador = new Jugador();
+    const resp = jugador.restarPuntos(50);
+
+    expect(resp).toBe(50);
+  });
+
+  it('Debe de retornar 0 puntos si se restan 100 o más', () => {
+    // const jugador = new Jugador();
+    const resp = jugador.restarPuntos(100);
+
+    expect(resp).toBe(0);
+  });
+});
+
+
+
+****************************************
+
+// PROFE - Formulario.ts - 16:37
+import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+
+export class FormularioRegister {
+  form: FormGroup;
+
+  constructor(fb: FormBuilder) {
+    this.form = fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', Validators.required]
+    });
+  }
+}
+
+****************************************
+
+// PROFE - formulario.spec.ts - 16:37
+import { FormularioRegister } from './formulario';
+import { FormBuilder } from '@angular/forms';
+
+describe('Formularios', () => {
+  let componente: FormularioRegister;
+
+  beforeEach(() => {
+    componente = new FormularioRegister(new FormBuilder());
+  });
+
+  it('Debe de crear un formulario con dos campos, email y password', () => {
+    expect(componente.form.contains('email')).toBeTruthy();
+    expect(componente.form.contains('password')).toBeTruthy();
+  });
+
+  it('El email debe de ser obligatorio', () => {
+    const control = componente.form.get('email');
+    control?.setValue('');
+    expect(control?.valid).toBeFalsy();
+  });
+
+  it('El email debe de ser un correo válido', () => {
+    const control = componente.form.get('email');
+    control?.setValue('juanluis@gmail.com');
+    expect(control?.valid).toBeTruthy();
+  });
+});
+
+****************************************
+
+// PROFE - productos.component.ts - 16:48
+import { Component, OnInit } from '@angular/core';
+import { ProductosService } from './productos.service';
+
+@Component({
+  selector: 'app-productos',
+  template: ` <p>productos works!</p> `,
+  styles: []
+})
+export class ProductosComponent implements OnInit {
+  productos: any[] = [];
+  mensajeError: string = '';
+
+  constructor(private productosService: ProductosService) {}
+
+  ngOnInit() {
+    this.productosService.getProductos().subscribe((productos) => (this.productos = productos));
+  }
+
+  agregarProducto() {
+    const producto = { nombre: 'Producto1' };
+
+    this.productosService.addProducto(producto).subscribe({
+      next: (data) => {
+        this.productos.push(data);
+      },
+      error: (err) => (this.mensajeError = err)
+    });
+  }
+}
+
+
+****************************************
+
+// PROFE - productos.component.spec.ts - 16:49
+import { ProductosComponent } from './productos.component';
+import { ProductosService } from './productos.service';
+import { EMPTY, throwError, of } from 'rxjs';
+
+describe('ProductosComponent', () => {
+  let componente: ProductosComponent;
+  const servicio = new ProductosService(undefined); 
+  
+  beforeEach(() => {
+    componente = new ProductosComponent(servicio);
+  });
+
+  it('Init: Debe cargar productos', () => {
+    const productos: any[] = ['producto1', 'producto2', 'producto3'];
+
+    // Necesitamos algo para simular la petición de datos
+    // Estamos en pruebas unitarias y no podemos emplear el servicio
+    // Un espía nos va a permitir hacer peticiones falsas
+    // En vez de ejecutar la implementación real de addProducto, la reemplaza con una función fake
+    // callFake permite desarrollar una función con lógica
+    spyOn(servicio, 'getProductos').and.callFake(() => {
+      // Como el servicio devuelve un observable, necesitamos crear uno y devolverlo
+      return of(productos);
+    });
+
+    // Las pruebas no llaman de forma automática al ngOnInit
+    componente.ngOnInit();
+
+    expect(componente.productos.length).toBeGreaterThan(0);
+  });
+
+  it('Debe llamar al servidor para agregar un producto', () => {
+    // En vez de ejecutar la implementación real de addProducto, la reemplaza con una función fake
+    const espia = spyOn(servicio, 'addProducto').and.callFake((producto) => {
+      return EMPTY; // EMPTY es un observable vacío
+    });
+
+    componente.agregarProducto();
+
+    expect(espia).toHaveBeenCalled();
+  });
+
+  it('Debe agregar un nuevo producto', () => {
+    const producto = { nombre: 'Ordenador' };
+
+    // from([producto] crea un observable que emite un producto y se completa
+    // Es como si el servicio estuviera haciendo una petición HTTP y devolviera el producto
+    // Simplificamos la ejecución devolviendo un producto. No utilizamos callFake porque
+    // en un caso real no sabríamos que el producto es Producto1 (ver componente)
+    spyOn(servicio, 'addProducto').and.returnValue(of(producto));
+
+    componente.agregarProducto();
+
+    expect(componente.productos.indexOf(producto)).toBeGreaterThanOrEqual(0);
+  });
+
+  it('Si falla la inserción, la propiedad mensajeError debe ser igual al error del servicio', () => {
+      const miError = 'No se pudo agregar el producto';
+
+      spyOn(servicio, 'addProducto').and.returnValue(throwError(() => miError));
+
+      componente.agregarProducto();
+
+      expect(componente.mensajeError).toBe(miError);
+    });
+});
+
+
+****************************************
+
+// productos.service.ts - 16:56
+import { inject, Inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+
+@Injectable()
+export class ProductosService {
+  http = inject(HttpClient);
+  constructor() {}
+
+  getProductos() {
+    return this.http.get<any[]>('...');
+  }
+
+  addProducto(producto: any) {
+    return this.http.post('...', producto);
+  }
+
+  deleteProducto(id: string) {
+    return this.http.delete('...');
+  }
+}
+
+****************************************
+
+// PROFE - contador.component.html - 17:11
+<h2>{{numero}}</h2>
+<button (click)="setContador(1)">+1</button>
+<button (click)="setContador(-1)">-1</button>
+
+<input type="number" name="numero" [(ngModel)]="numero" />
+
+****************************************
+
+// productos.component.spec.ts - 17:12
+import { ProductosComponent } from './productos.component';
+import { ProductosService } from './productos.service';
+import { EMPTY, throwError, of } from 'rxjs';
+
+describe('ProductosComponent', () => {
+  let componente: ProductosComponent;
+  const servicio = new ProductosService(); 
+  
+  beforeEach(() => {
+    componente = new ProductosComponent(servicio);
+  });
+
+  it('Init: Debe cargar productos', () => {
+    const productos: any[] = ['producto1', 'producto2', 'producto3'];
+
+    // Necesitamos algo para simular la petición de datos
+    // Estamos en pruebas unitarias y no podemos emplear el servicio
+    // Un espía nos va a permitir hacer peticiones falsas
+    // En vez de ejecutar la implementación real de addProducto, la reemplaza con una función fake
+    // callFake permite desarrollar una función con lógica
+    spyOn(servicio, 'getProductos').and.callFake(() => {
+      // Como el servicio devuelve un observable, necesitamos crear uno y devolverlo
+      return of(productos);
+    });
+
+    // Las pruebas no llaman de forma automática al ngOnInit
+    componente.ngOnInit();
+
+    expect(componente.productos.length).toBeGreaterThan(0);
+  });
+
+  it('Debe llamar al servidor para agregar un producto', () => {
+    // En vez de ejecutar la implementación real de addProducto, la reemplaza con una función fake
+    const espia = spyOn(servicio, 'addProducto').and.callFake((producto) => {
+      return EMPTY; // EMPTY es un observable vacío
+    });
+
+    componente.agregarProducto();
+
+    expect(espia).toHaveBeenCalled();
+  });
+
+  it('Debe agregar un nuevo producto', () => {
+    const producto = { nombre: 'Ordenador' };
+
+    // from([producto] crea un observable que emite un producto y se completa
+    // Es como si el servicio estuviera haciendo una petición HTTP y devolviera el producto
+    // Simplificamos la ejecución devolviendo un producto. No utilizamos callFake porque
+    // en un caso real no sabríamos que el producto es Producto1 (ver componente)
+    spyOn(servicio, 'addProducto').and.returnValue(of(producto));
+
+    componente.agregarProducto();
+
+    expect(componente.productos.indexOf(producto)).toBeGreaterThanOrEqual(0);
+  });
+
+  it('Si falla la inserción, la propiedad mensajeError debe ser igual al error del servicio', () => {
+      const miError = 'No se pudo agregar el producto';
+
+      spyOn(servicio, 'addProducto').and.returnValue(throwError(() => miError));
+
+      componente.agregarProducto();
+
+      expect(componente.mensajeError).toBe(miError);
+    });
+});
+
+
+****************************************
+
+// PROFE - contador.component.ts - 17:13
+import { Component, Input, OnInit } from '@angular/core';
+
+@Component({
+  selector: 'app-contador',
+  templateUrl: './contador.component.html',
+  styleUrls: ['./contador.component.css']
+})
+export class ContadorComponent implements OnInit {
+  @Input() numero: number = 0;
+
+  constructor() {}
+
+  ngOnInit() {}
+
+  setContador(valor: number) {
+    this.numero += valor;
+  }
+}
+
+
+****************************************
+
+// PROFE - contador.component.spec.ts - 17:14
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { ContadorComponent } from './contador.component';
+import { By } from '@angular/platform-browser';
+
+describe('ContadorComponent', () => {
+  let component: ContadorComponent;
+  let fixture: ComponentFixture<ContadorComponent>;
+
+  // Es asíncrono porque utiliza el html y necesita acceder al filesystem
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [ContadorComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(ContadorComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+
+  it('Debe mostrar el numero', () => {
+    component.numero = 8;
+    fixture.detectChanges();
+    const h2: HTMLElement = fixture.debugElement.query(By.css('h2')).nativeElement;
+
+    expect(h2.innerHTML).toContain('8');
+  });
+
+  it('Debe mostrar el numero que aparece en el h2 cuando varía mediante setContador', () => {
+    component.setContador(1);
+    fixture.detectChanges();
+
+    const h2: HTMLElement = fixture.debugElement.query(By.css('h2')).nativeElement;
+    expect(h2.innerHTML).toContain('1');
+  });
+
+  it('Debe incrementar el numero que aparece en el input cuando se produce el click en el botón +1', async () => {
+    const botones = fixture.debugElement.queryAll(By.css('button'));
+    const input: HTMLInputElement = fixture.debugElement.query(By.css('input')).nativeElement;
+
+    // El primer botón es el +1
+    botones[0].triggerEventHandler('click'); 
+    fixture.detectChanges();
+    // whenStable se asegura de que el ciclo de cambios ha concluído. En este caso funciona sin la función también, pero puede que a veces el test (expect) se ejecute antes de que haya terminado el ciclo de detección de cambios
+    await fixture.whenStable();
+    expect(input.value).toContain('1');
+  });
+
+
+
+****************************************
+

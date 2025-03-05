@@ -1,0 +1,296 @@
+// PROFE - Nuevo componente y nuevo servicio - 15:40
+ng generate component integracion/list-users
+ng generate service Integracion/list-users
+
+****************************************
+
+// PROFE - list-users.service.ts - 15:42
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+
+@Injectable()
+export class ListUsersService {
+  constructor(private http: HttpClient) {}
+
+  getUsers(): Observable<any> {
+    return this.http.get('https://api.github.com/users');
+  }
+}
+
+****************************************
+
+// PROFE - list-users.component.ts - 15:42
+import { Component, OnInit } from '@angular/core';
+import { ListUsersService } from './list-users.service';
+
+@Component({
+  selector: 'app-list-users',
+  templateUrl: './list-users.component.html',
+  styleUrls: ['./list-users.component.css']
+})
+export class ListUsersComponent implements OnInit {
+  users: any[]=[];
+
+  constructor(private service: ListUsersService) {}
+
+  ngOnInit() {
+    this.getUsers();
+  }
+
+  getUsers() {
+    this.service.getUsers().subscribe((users) => (this.users = users));
+  }
+}
+
+
+****************************************
+
+// PROFE - users.class.ts - 15:52
+import { Observable, of } from 'rxjs';
+
+const users = [
+  {
+    login: 'mojombo',
+    id: 1,
+    node_id: 'MDQ6VXNlcjE=',
+    avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4',
+    gravatar_id: '',
+    url: 'https://api.github.com/users/mojombo',
+    html_url: 'https://github.com/mojombo',
+    followers_url: 'https://api.github.com/users/mojombo/followers',
+    following_url: 'https://api.github.com/users/mojombo/following{/other_user}',
+    gists_url: 'https://api.github.com/users/mojombo/gists{/gist_id}',
+    starred_url: 'https://api.github.com/users/mojombo/starred{/owner}{/repo}',
+    subscriptions_url: 'https://api.github.com/users/mojombo/subscriptions',
+    organizations_url: 'https://api.github.com/users/mojombo/orgs',
+    repos_url: 'https://api.github.com/users/mojombo/repos',
+    events_url: 'https://api.github.com/users/mojombo/events{/privacy}',
+    received_events_url: 'https://api.github.com/users/mojombo/received_events',
+    type: 'User',
+    site_admin: false
+  }
+];
+
+
+export class MockUsers {
+  public getUsers(): Observable<any> {
+    return of(users);
+  }
+  public getUsersData(): any {
+    return users;
+  }
+}
+
+
+****************************************
+
+// PROFE - list-users.service.spec.ts - 15:57
+import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { ListUsersService } from './list-users.service';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { MockUsers } from './users.class';
+
+describe('ListUsersService', () => {
+  let service: ListUsersService;
+  let httpMock: HttpTestingController;
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [ListUsersService, provideHttpClient(),  provideHttpClientTesting()]
+    });
+
+    service = TestBed.inject(ListUsersService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  it('servicio creado', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('petición get exitosa', () => {
+    const mock = new MockUsers();
+    const mockUsers = mock.getUsersData();
+
+    // Probamos que el método getUsers del servicio realiza la petición http 
+    // y devuelve los datos mockeados
+    service.getUsers().subscribe({
+      next: (users) => {
+        expect(users).not.toBeNull();
+        expect(users.length).toBe(1);
+        expect(users).toEqual(mockUsers);
+      }
+    });
+
+    // Intercepta la petición HTTP anterior y comprobamos si devuelve los datos mockeados
+    // No hace una llamada real a la api
+    const req = httpMock.expectOne('https://api.github.com/users');
+    expect(req.request.method).toBe('GET');
+  
+    req.flush(mockUsers); // Enviamos la respuesta simulada comprobando que es la esperada
+  });
+
+  it('debería manejar un error HTTP', () => {
+    const errorMessage = 'Error en la petición';
+
+    service.getUsers().subscribe({
+      next: () => fail('La solicitud debería haber fallado'),
+      error: (error) => {
+        expect(error.status).toBe(500);
+        expect(error.statusText).toBe(errorMessage);
+      }
+    });
+
+    const req = httpMock.expectOne('https://api.github.com/users');
+    req.flush(errorMessage, { status: 500, statusText: errorMessage });
+  });
+});
+
+
+****************************************
+
+// PROFE - list-users.component.spec.ts - 16:19
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { ListUsersComponent } from './list-users.component';
+import { ListUsersService } from './list-users.service';
+import { MockUsers } from './users.class';
+
+describe('ListUsersComponent', () => {
+  let component: ListUsersComponent;
+  // ComponentFixture permite acceder a la instancia del componente (componentInstance)
+  // Detectar cambios en la vista (detectChanges)
+  // Consultar elementos del DOM
+  let fixture: ComponentFixture<ListUsersComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [ListUsersComponent],
+      providers: [
+        {
+          provide: ListUsersService,
+          useClass: MockUsers
+        }
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ListUsersComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('debe crearse el componente', () => {
+    expect(component).toBeTruthy();
+  });
+
+  it('debe cargarse un usuario', () => {
+    component.getUsers();
+    fixture.detectChanges();
+    expect(component.users[0].login).toEqual('mojombo');
+  });
+});
+
+
+****************************************
+
+// PROFE - Operacion.cs - 16:58
+ public class Operacion
+ {
+     public int SumarNumeros(int n1, int n2)
+     {
+         return n1 + n2;
+     }
+ }
+
+****************************************
+
+// Nombre proyecto test - 17:03
+PruebasTesting.Tests
+
+****************************************
+
+// PROFE - OperacionTests.cs - 17:06
+  [TestClass]
+  public class OperacionTests
+  {
+      [TestMethod]
+      public void SumarNumerosTest_SumaBien()
+      {
+          // Preparación (arrange)
+          var operacion = new Operacion();
+
+          // Ejecución (act)
+          var suma = operacion.SumarNumeros(8,7);
+
+          // Verificación (assert)
+          Assert.AreEqual(15, suma);
+      }
+  }
+
+****************************************
+
+// PROFE - OperacionTests..cs - 17:17
+[TestFixture]
+ public class OperacionTests
+ {
+     [Test]
+     public void SumarNumerosTest_SumaBien()
+     {
+         // Preparación (arrange)
+         var operacion = new Operacion();
+
+         // Ejecución (act)
+         var suma = operacion.SumarNumeros(8, 7);
+
+         // Verificación (assert)
+         Assert.That(suma, Is.EqualTo(15));
+         // Assert.AreEqual(15, suma);
+     }
+ }
+
+
+****************************************
+
+// PROFE - Operacion.cs - 17:18
+ public bool EsPar(int n1)
+ {
+     return n1 %2 == 0;
+ }
+
+****************************************
+
+// PROFE - OperacionTests.cs (Nunit) - 17:20
+[Test]
+public void SumarNumerosTest_CalculaBienEsPar()
+{
+    var operacion = new Operacion();
+    var esPar = operacion.EsPar(8);
+    Assert.That(esPar, Is.True);
+    // Assert.IsTrue(esPar);
+}
+
+  // [Test] Opcional
+ [TestCase(9)]
+ [TestCase(99)]
+ public void SumarNumerosTest_CalculaBienNoEsPar(int n)
+ {
+     var operacion = new Operacion();
+     var esPar = operacion.EsPar(n);
+     Assert.That(esPar, Is.False);
+     // Assert.IsFalse(esPar);
+ }
+
+ [Test]
+ [TestCase(9, ExpectedResult = false)]
+ [TestCase(8, ExpectedResult = true)]
+ public bool SumarNumerosTest_CalculaBienEsParOImpar(int n)
+ {
+      var operacion = new Operacion();
+      var esPar = operacion.EsPar(n);
+      return esPar;
+ }
+
+
+
+****************************************
+
